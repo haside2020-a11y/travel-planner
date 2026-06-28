@@ -5,8 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>여행 일정</title>
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 </head>
 <body>
+
+<!-- 오프라인 상태 바 -->
+<div id="status-bar" style="display:none;padding:8px 20px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#1a1a18;border-bottom:1px solid rgba(255,255,255,.1)">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="status-dot" style="width:8px;height:8px;border-radius:50%;background:#1d9e75;display:inline-block"></span>
+    <span id="status-text" style="color:rgba(255,255,255,.7)">온라인</span>
+    <span id="last-saved" style="color:rgba(255,255,255,.35)"></span>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button onclick="saveOffline()" style="padding:4px 12px;font-size:11px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);cursor:pointer;font-family:inherit">💾 저장</button>
+    <button onclick="syncOnline()" id="sync-btn" style="padding:4px 12px;font-size:11px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);cursor:pointer;font-family:inherit">🔄 동기화</button>
+  </div>
+</div>
 
 <!-- 헤더 -->
 <div class="trip-header">
@@ -142,22 +159,48 @@ const slug = params.get('slug')
 
 if (!slug) { location.href = 'index.html' }
 
-async function init() {
-  const { data: trip, error } = await sb.from('trips').select('*').eq('slug', slug).single()
-  if (error || !trip) { document.getElementById('content').innerHTML = '<div class="error-msg">여행을 찾을 수 없습니다.</div>'; return }
-  tripData = trip
+async function init(forceNetwork = false) {
+  updateStatusBar()
 
-  const { data: days } = await sb.from('days').select('*').eq('trip_id', trip.id).order('day_number')
-  daysData = days || []
+  // 오프라인이거나 강제 네트워크가 아닐 때 로컬 데이터 먼저 시도
+  if (!navigator.onLine && !forceNetwork) {
+    if (loadOfflineData()) {
+      renderHeader(); renderTabs(); renderAll()
+      showToast('📦 저장된 데이터로 열었습니다')
+      return
+    }
+    document.getElementById('content').innerHTML = '<div class="error-msg">오프라인 상태입니다.<br>먼저 온라인에서 💾 저장을 눌러주세요.</div>'
+    return
+  }
 
-  for (const day of daysData) {
-    const { data: acts } = await sb.from('activities').select('*').eq('day_id', day.id).order('sort_order').order('time')
-    activitiesData[day.id] = acts || []
+  try {
+    const { data: trip, error } = await sb.from('trips').select('*').eq('slug', slug).single()
+    if (error || !trip) throw new Error('not found')
+    tripData = trip
+
+    const { data: days } = await sb.from('days').select('*').eq('trip_id', trip.id).order('day_number')
+    daysData = days || []
+
+    for (const day of daysData) {
+      const { data: acts } = await sb.from('activities').select('*').eq('day_id', day.id).order('sort_order').order('time')
+      activitiesData[day.id] = acts || []
+    }
+  } catch {
+    // 네트워크 실패 시 로컬 폴백
+    if (loadOfflineData()) {
+      renderHeader(); renderTabs(); renderAll()
+      showToast('📦 저장된 데이터로 열었습니다 (네트워크 오류)')
+      updateStatusBar()
+      return
+    }
+    document.getElementById('content').innerHTML = '<div class="error-msg">여행을 불러올 수 없습니다.<br>인터넷 연결을 확인하거나 저장된 데이터가 필요합니다.</div>'
+    return
   }
 
   renderHeader()
   renderTabs()
   renderAll()
+  updateStatusBar()
 }
 
 function renderHeader() {
@@ -566,6 +609,69 @@ document.addEventListener('click', () => {
   lockTimer = setTimeout(exitEdit, 30 * 60 * 1000)
 })
 
+// ── 오프라인 / 동기화 ──
+const STORE_KEY = () => `trip-offline-${slug}`
+
+function updateStatusBar() {
+  const bar = document.getElementById('status-bar')
+  const dot = document.getElementById('status-dot')
+  const txt = document.getElementById('status-text')
+  const syncBtn = document.getElementById('sync-btn')
+  const saved = document.getElementById('last-saved')
+  bar.style.display = 'flex'
+
+  const online = navigator.onLine
+  dot.style.background = online ? '#1d9e75' : '#e24b4a'
+  txt.textContent = online ? '온라인' : '오프라인'
+  syncBtn.style.opacity = online ? '1' : '0.4'
+  syncBtn.style.pointerEvents = online ? 'auto' : 'none'
+
+  const raw = localStorage.getItem(STORE_KEY() + '-time')
+  if (raw) {
+    const diff = Math.round((Date.now() - parseInt(raw)) / 60000)
+    saved.textContent = diff < 1 ? '· 방금 저장됨' : diff < 60 ? `· ${diff}분 전 저장` : `· ${Math.floor(diff/60)}시간 전 저장`
+  } else {
+    saved.textContent = '· 저장 안 됨'
+  }
+}
+
+function saveOffline() {
+  const payload = { trip: tripData, days: daysData, activities: activitiesData }
+  localStorage.setItem(STORE_KEY(), JSON.stringify(payload))
+  localStorage.setItem(STORE_KEY() + '-time', Date.now().toString())
+  updateStatusBar()
+  showToast('💾 오프라인 저장 완료!')
+}
+
+async function syncOnline() {
+  if (!navigator.onLine) { showToast('인터넷 연결이 필요합니다'); return }
+  showToast('🔄 동기화 중...')
+  await init(true)
+  saveOffline()
+  showToast('✅ 동기화 완료!')
+}
+
+function loadOfflineData() {
+  const raw = localStorage.getItem(STORE_KEY())
+  if (!raw) return false
+  try {
+    const { trip, days, activities } = JSON.parse(raw)
+    tripData = trip; daysData = days; activitiesData = activities
+    return true
+  } catch { return false }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div')
+  t.textContent = msg
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;white-space:nowrap;pointer-events:none'
+  document.body.appendChild(t)
+  setTimeout(() => t.remove(), 2500)
+}
+
+window.addEventListener('online', updateStatusBar)
+window.addEventListener('offline', updateStatusBar)
+
 // ── 빠른 시간 선택 드롭다운 옵션 생성 ──
 function buildTimePicker() {
   const sel = document.getElementById('act-time-pick')
@@ -593,6 +699,11 @@ function applyTimePick() {
   }
   sel.value = ''
   input.focus()
+}
+
+// 서비스 워커 등록
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/travel-planner/sw.js')
 }
 
 buildTimePicker()
