@@ -247,7 +247,7 @@ a { color: inherit; text-decoration: none; }
 .edit-mode .editable:focus { background: #e1f5ee; box-shadow: 0 0 0 2px #5dcaa5; }
 .edit-mode .add-activity-btn { display: block; }
 .add-activity-btn { display: none; }
-.edit-mode .tl-actions { display: none !important; }
+.edit-mode .tl-item:hover .tl-actions { display: flex; }
 
 /* ── 타입 색상 ── */
 .type-transport { background: #e6f1fb; }

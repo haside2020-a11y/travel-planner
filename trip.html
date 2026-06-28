@@ -54,12 +54,16 @@
     <input type="hidden" id="act-id">
     <input type="hidden" id="act-day-id">
     <div style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:grid;grid-template-columns:80px 1fr;gap:8px">
-        <div>
-          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">시간</label>
-          <input type="text" id="act-time" placeholder="09:00" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+      <div>
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">시간</label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="act-time" placeholder="09:00 또는 09:00~11:00" style="flex:1;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+          <select id="act-time-pick" onchange="applyTimePick()" style="width:110px;padding:7px 6px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:12px;outline:none;background:#fff;color:#888">
+            <option value="">빠른선택</option>
+          </select>
         </div>
-        <div>
+      </div>
+      <div>
           <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">종류</label>
           <select id="act-type" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
             <option value="sight">🏛️ 관광</option>
@@ -70,7 +74,6 @@
             <option value="hotel">🏨 숙박</option>
             <option value="free">🌙 자유</option>
           </select>
-        </div>
       </div>
       <div>
         <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">이름 *</label>
@@ -563,6 +566,36 @@ document.addEventListener('click', () => {
   lockTimer = setTimeout(exitEdit, 30 * 60 * 1000)
 })
 
+// ── 빠른 시간 선택 드롭다운 옵션 생성 ──
+function buildTimePicker() {
+  const sel = document.getElementById('act-time-pick')
+  for (let h = 5; h <= 23; h++) {
+    ['00', '30'].forEach(m => {
+      const t = `${String(h).padStart(2,'0')}:${m}`
+      const opt = document.createElement('option')
+      opt.value = t
+      opt.textContent = t
+      sel.appendChild(opt)
+    })
+  }
+}
+
+function applyTimePick() {
+  const sel = document.getElementById('act-time-pick')
+  const val = sel.value
+  if (!val) return
+  const input = document.getElementById('act-time')
+  const cur = input.value.trim()
+  if (cur && !cur.includes('~')) {
+    input.value = cur + '~' + val
+  } else {
+    input.value = val
+  }
+  sel.value = ''
+  input.focus()
+}
+
+buildTimePicker()
 init()
 </script>
 </body>
