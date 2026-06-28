@@ -1,0 +1,299 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  background: #f5f4f0;
+  color: #1a1a18;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── 공통 버튼 ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px;
+  border: 1px solid #ddd; background: #fff;
+  font-size: 13px; font-family: inherit; cursor: pointer;
+  color: #444; transition: .15s;
+}
+.btn:hover { background: #f5f4f0; border-color: #bbb; }
+.btn-primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+.btn-primary:hover { background: #333; border-color: #333; }
+
+/* ── 인덱스 (여행 목록) ── */
+.page-header {
+  background: #1a1a18; color: #fff;
+  padding: 28px 32px;
+}
+.page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.page-header p { font-size: 13px; color: rgba(255,255,255,.5); }
+
+.trips-container { max-width: 960px; margin: 0 auto; padding: 28px 24px; }
+
+.trips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.trip-card {
+  background: #fff; border: 1px solid #e8e6e0;
+  border-radius: 12px; padding: 20px;
+  cursor: pointer; transition: border-color .2s, transform .15s;
+  display: block;
+}
+.trip-card:hover { border-color: #1a1a18; transform: translateY(-2px); }
+.trip-card .dest { font-size: 11px; color: #aaa; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+.trip-card .title { font-size: 17px; font-weight: 600; margin: 4px 0 8px; }
+.trip-card .dates { font-size: 12px; color: #666; }
+.trip-card .meta { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.trip-card .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #f5f4f0; color: #666; }
+
+.add-card {
+  background: none; border: 1.5px dashed #ddd;
+  border-radius: 12px; padding: 20px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; color: #bbb; font-size: 14px;
+  cursor: pointer; transition: .2s;
+}
+.add-card:hover { border-color: #aaa; color: #888; }
+
+/* ── 여행 상세 헤더 ── */
+.trip-header {
+  background: #1a1a18; color: #fff;
+  padding: 20px 28px 16px;
+}
+.trip-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.trip-header h1 { font-size: 20px; font-weight: 600; margin-bottom: 2px; }
+.trip-header .sub { font-size: 12px; color: rgba(255,255,255,.5); }
+.trip-stats { display: flex; gap: 20px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.12); }
+.stat { text-align: center; }
+.stat-n { font-size: 15px; font-weight: 600; }
+.stat-l { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 1px; }
+
+/* ── 잠금 버튼 ── */
+.lock-btn {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #1a1a18; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; z-index: 100;
+  border: none; transition: .2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.lock-btn:hover { background: #333; transform: scale(1.05); }
+.lock-btn.unlocked { background: #1d9e75; }
+
+/* ── PIN 모달 ── */
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  align-items: center; justify-content: center;
+  z-index: 200;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: #fff; border-radius: 16px;
+  padding: 28px 32px; width: 300px; text-align: center;
+}
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.modal p { font-size: 13px; color: #888; margin-bottom: 20px; }
+.pin-input {
+  width: 100%; padding: 12px; text-align: center;
+  font-size: 24px; letter-spacing: 8px;
+  border: 1.5px solid #e0e0e0; border-radius: 8px;
+  margin-bottom: 14px; font-family: inherit;
+  outline: none;
+}
+.pin-input:focus { border-color: #1a1a18; }
+.pin-error { color: #e24b4a; font-size: 12px; margin-bottom: 10px; display: none; }
+.modal-actions { display: flex; gap: 8px; }
+.modal-actions button { flex: 1; }
+
+/* ── 탭 바 ── */
+.tab-bar {
+  background: #fff; border-bottom: 1px solid #e8e6e0;
+  display: flex; overflow-x: auto; scrollbar-width: none;
+  position: sticky; top: 0; z-index: 50;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex-shrink: 0; padding: 12px 18px;
+  font-size: 12px; font-weight: 500; color: #aaa;
+  cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent;
+  transition: .15s; font-family: inherit;
+}
+.tab-btn .dn { font-size: 15px; font-weight: 600; display: block; line-height: 1.2; }
+.tab-btn .dd { font-size: 10px; color: #ccc; }
+.tab-btn.active { color: #1a1a18; border-bottom-color: #1a1a18; }
+.tab-btn.active .dd { color: #888; }
+.tab-btn:hover:not(.active) { color: #666; }
+
+/* ── 메인 콘텐츠 ── */
+.content { max-width: 900px; margin: 0 auto; padding: 20px 20px; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── 개요 ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.ov-card {
+  background: #fff; border: 1px solid #e8e6e0;
+  border-radius: 12px; padding: 14px 16px;
+  cursor: pointer; transition: border-color .2s, transform .15s;
+}
+.ov-card:hover { border-color: #1a1a18; transform: translateY(-1px); }
+.ov-day { font-size: 10px; color: #bbb; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+.ov-title { font-size: 14px; font-weight: 600; margin: 3px 0 10px; }
+.ov-items { display: flex; flex-direction: column; gap: 4px; }
+.ov-item { font-size: 11px; color: #666; display: flex; align-items: center; gap: 6px; }
+.ov-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── 일별 상세 ── */
+.day-head { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e8e6e0; }
+.day-head-label { font-size: 11px; color: #aaa; margin-bottom: 3px; }
+.day-head-title { font-size: 20px; font-weight: 600; }
+.day-head-memo { font-size: 12px; color: #777; margin-top: 4px; }
+
+.day-layout { display: grid; grid-template-columns: 1fr 180px; gap: 20px; align-items: start; }
+
+/* ── 타임라인 ── */
+.timeline { position: relative; padding-left: 48px; }
+.timeline::before {
+  content: ''; position: absolute;
+  left: 18px; top: 8px; bottom: 8px;
+  width: 1px; background: #e8e6e0;
+}
+.tl-item {
+  position: relative; margin-bottom: 12px;
+  background: #fff; border: 1px solid #e8e6e0;
+  border-radius: 10px; padding: 12px 14px;
+  transition: border-color .2s;
+}
+.tl-item:hover { border-color: #ccc; }
+.tl-icon {
+  position: absolute; left: -40px; top: 12px;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; border: 2px solid #f5f4f0;
+}
+.tl-row1 { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+.tl-time { font-size: 11px; color: #aaa; font-weight: 500; min-width: 38px; }
+.tl-type-badge { font-size: 10px; padding: 1px 6px; border-radius: 20px; background: #f5f4f0; color: #888; }
+.tl-name { font-size: 14px; font-weight: 600; color: #1a1a18; margin-bottom: 3px; }
+.tl-desc { font-size: 12px; color: #666; line-height: 1.5; }
+.tl-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.tl-link {
+  font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  border: 1px solid #e8e6e0; color: #555;
+  display: flex; align-items: center; gap: 3px;
+  transition: .15s;
+}
+.tl-link:hover { border-color: #1a1a18; color: #1a1a18; }
+.tl-memo {
+  margin-top: 8px; padding: 6px 10px;
+  background: #faf9f6; border-radius: 6px;
+  font-size: 11px; color: #777; border-left: 2px solid #e8e6e0;
+}
+.tl-actions { display: none; position: absolute; top: 8px; right: 8px; gap: 4px; }
+.tl-item:hover .tl-actions { display: flex; }
+.tl-action-btn {
+  padding: 3px 6px; font-size: 11px; border-radius: 4px;
+  border: 1px solid #e8e6e0; background: #fff;
+  cursor: pointer; color: #888; font-family: inherit;
+}
+.tl-action-btn:hover { background: #f5f4f0; }
+.tl-action-btn.del:hover { background: #fcebeb; color: #e24b4a; border-color: #f09595; }
+
+.add-activity-btn {
+  width: 100%; padding: 10px; margin-top: 4px;
+  border: 1.5px dashed #ddd; border-radius: 10px;
+  background: none; color: #bbb; font-size: 13px;
+  cursor: pointer; font-family: inherit; transition: .2s;
+}
+.add-activity-btn:hover { border-color: #aaa; color: #888; }
+
+/* ── 비용 컬럼 ── */
+.cost-panel {
+  background: #fff; border: 1px solid #e8e6e0;
+  border-radius: 10px; padding: 14px 16px;
+  position: sticky; top: 64px;
+}
+.cost-panel h4 { font-size: 12px; color: #aaa; margin-bottom: 12px; font-weight: 500; }
+.cost-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #f0ede8; }
+.cost-item:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.cost-name { font-size: 11px; color: #888; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cost-vals { display: flex; flex-direction: column; gap: 1px; }
+.cost-pp { font-size: 12px; font-weight: 500; }
+.cost-total { font-size: 11px; color: #aaa; }
+.cost-divider { border: none; border-top: 1.5px solid #e8e6e0; margin: 12px 0; }
+.cost-sum { }
+.cost-sum-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.cost-sum-label { font-size: 12px; color: #888; }
+.cost-sum-val { font-size: 13px; font-weight: 600; }
+
+/* ── 편집 모드 ── */
+.editable {
+  outline: none; border-radius: 4px; padding: 1px 3px; margin: -1px -3px;
+  transition: background .15s;
+}
+.edit-mode .editable:hover { background: #f0f9f5; cursor: text; }
+.edit-mode .editable:focus { background: #e1f5ee; box-shadow: 0 0 0 2px #5dcaa5; }
+.edit-mode .add-activity-btn { display: block; }
+.add-activity-btn { display: none; }
+.edit-mode .tl-actions { display: none !important; }
+
+/* ── 타입 색상 ── */
+.type-transport { background: #e6f1fb; }
+.type-meal      { background: #faeeda; }
+.type-sight     { background: #e1f5ee; }
+.type-shopping  { background: #fbeaf0; }
+.type-hotel     { background: #eeedfe; }
+.type-activity  { background: #eaf3de; }
+.type-free      { background: #f1efe8; }
+
+/* ── 로딩 ── */
+.loading {
+  text-align: center; padding: 60px 20px;
+  color: #aaa; font-size: 14px;
+}
+.error-msg { text-align: center; padding: 40px; color: #e24b4a; }
+
+/* ── 인쇄 ── */
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .trip-header { padding: 12pt 16pt 10pt; }
+  .trip-header h1 { font-size: 16pt; }
+  .trip-stats { margin-top: 8pt; padding-top: 8pt; }
+  .stat-n { font-size: 12pt; }
+  .tab-bar, .lock-btn, .modal-bg,
+  .tl-actions, .add-activity-btn,
+  .toolbar { display: none !important; }
+  .content { padding: 12pt 16pt; max-width: 100%; }
+  .view { display: none !important; }
+  .view.print-target { display: block !important; }
+  .day-layout { grid-template-columns: 1fr 140pt; gap: 14pt; }
+  .timeline { padding-left: 36pt; }
+  .tl-item { margin-bottom: 8pt; padding: 8pt 10pt; border: 0.5pt solid #ccc; page-break-inside: avoid; }
+  .tl-icon { left: -30pt; width: 20pt; height: 20pt; font-size: 10pt; }
+  .tl-name { font-size: 11pt; }
+  .tl-desc { font-size: 10pt; }
+  .cost-panel { position: static; border: 0.5pt solid #ccc; }
+  .cost-panel h4, .cost-name { font-size: 9pt; }
+  .cost-pp { font-size: 10pt; }
+  @page { margin: 14mm 12mm; size: A4; }
+}
+
+@media (max-width: 640px) {
+  .day-layout { grid-template-columns: 1fr; }
+  .cost-panel { position: static; }
+  .trip-stats { gap: 12px; }
+  .trip-header { padding: 16px; }
+  .content { padding: 14px; }
+}

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>여행 일정</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="trip-header">
+  <div class="trip-header-top">
+    <div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:4px">
+        <a href="index.html" style="color:rgba(255,255,255,.4)">← 목록으로</a>
+      </div>
+      <h1 id="hdr-title">불러오는 중...</h1>
+      <div class="sub" id="hdr-sub"></div>
+    </div>
+  </div>
+  <div class="trip-stats" id="hdr-stats"></div>
+</div>
+
+<!-- 탭 -->
+<div class="tab-bar" id="tab-bar"></div>
+
+<!-- 콘텐츠 -->
+<div class="content" id="content">
+  <div class="loading">여행 정보를 불러오는 중...</div>
+</div>
+
+<!-- 잠금 버튼 -->
+<button class="lock-btn" id="lock-btn" title="편집 모드">🔒</button>
+
+<!-- PIN 모달 -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3>편집 모드</h3>
+    <p>PIN 번호를 입력하세요</p>
+    <input type="password" class="pin-input" id="pin-input" maxlength="4" placeholder="••••">
+    <div class="pin-error" id="pin-error">PIN이 틀렸습니다</div>
+    <div class="modal-actions">
+      <button class="btn" id="pin-cancel">취소</button>
+      <button class="btn btn-primary" id="pin-confirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 활동 추가/편집 모달 -->
+<div class="modal-bg" id="act-modal">
+  <div class="modal" style="width:400px;text-align:left">
+    <h3 id="act-modal-title" style="margin-bottom:16px">활동 추가</h3>
+    <input type="hidden" id="act-id">
+    <input type="hidden" id="act-day-id">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:grid;grid-template-columns:80px 1fr;gap:8px">
+        <div>
+          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">시간</label>
+          <input type="text" id="act-time" placeholder="09:00" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">종류</label>
+          <select id="act-type" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
+            <option value="sight">🏛️ 관광</option>
+            <option value="meal">🍽️ 식사</option>
+            <option value="activity">🎯 액티비티</option>
+            <option value="shopping">🛍️ 쇼핑</option>
+            <option value="transport">✈️ 이동</option>
+            <option value="hotel">🏨 숙박</option>
+            <option value="free">🌙 자유</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">이름 *</label>
+        <input type="text" id="act-name" placeholder="언더워터 월드" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">설명</label>
+        <textarea id="act-desc" rows="2" placeholder="간단한 설명..." style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;resize:vertical"></textarea>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">메모 (팁)</label>
+        <input type="text" id="act-memo" placeholder="예약 필수, 주의사항 등" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px">
+        <div>
+          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">1인 비용</label>
+          <input type="text" id="act-cost-pp" placeholder="25000" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">총 비용</label>
+          <input type="text" id="act-cost-total" placeholder="100000" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">통화</label>
+          <select id="act-currency" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
+            <option value="KRW">KRW</option>
+            <option value="USD">USD</option>
+            <option value="JPY">JPY</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">지도 링크</label>
+        <input type="url" id="act-map" placeholder="https://naver.me/..." style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">블로그/참고 링크</label>
+        <input type="url" id="act-blog" placeholder="https://blog.naver.com/..." style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
+      </div>
+    </div>
+    <div style="margin-top:18px" class="modal-actions">
+      <button class="btn" id="act-cancel">취소</button>
+      <button class="btn btn-primary" id="act-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+const TYPE_ICONS = { transport:'✈️', meal:'🍽️', sight:'🏛️', shopping:'🛍️', hotel:'🏨', activity:'🎯', free:'🌙' }
+const TYPE_LABELS = { transport:'이동', meal:'식사', sight:'관광', shopping:'쇼핑', hotel:'숙박', activity:'액티비티', free:'자유' }
+
+let tripData = null
+let daysData = []
+let activitiesData = {}
+let editMode = false
+let activeTab = 'all'
+let editingActId = null
+
+const params = new URLSearchParams(location.search)
+const slug = params.get('slug')
+
+if (!slug) { location.href = 'index.html' }
+
+async function init() {
+  const { data: trip, error } = await sb.from('trips').select('*').eq('slug', slug).single()
+  if (error || !trip) { document.getElementById('content').innerHTML = '<div class="error-msg">여행을 찾을 수 없습니다.</div>'; return }
+  tripData = trip
+
+  const { data: days } = await sb.from('days').select('*').eq('trip_id', trip.id).order('day_number')
+  daysData = days || []
+
+  for (const day of daysData) {
+    const { data: acts } = await sb.from('activities').select('*').eq('day_id', day.id).order('sort_order').order('time')
+    activitiesData[day.id] = acts || []
+  }
+
+  renderHeader()
+  renderTabs()
+  renderAll()
+}
+
+function renderHeader() {
+  document.title = tripData.title
+  document.getElementById('hdr-title').textContent = tripData.title
+  document.getElementById('hdr-sub').textContent = `${tripData.destination || ''} · ${fmtDate(tripData.start_date)} ~ ${fmtDate(tripData.end_date)}`
+  const nights = tripData.start_date && tripData.end_date
+    ? Math.round((new Date(tripData.end_date) - new Date(tripData.start_date)) / 86400000) : null
+  document.getElementById('hdr-stats').innerHTML = `
+    ${nights ? `<div class="stat"><div class="stat-n">${nights}박</div><div class="stat-l">숙박</div></div>` : ''}
+    ${daysData.length ? `<div class="stat"><div class="stat-n">${daysData.length}일</div><div class="stat-l">일정</div></div>` : ''}
+    ${tripData.people_count ? `<div class="stat"><div class="stat-n">${tripData.people_count}명</div><div class="stat-l">인원</div></div>` : ''}
+    ${tripData.airline ? `<div class="stat"><div class="stat-n" style="font-size:12px">${tripData.airline}</div><div class="stat-l">항공</div></div>` : ''}
+    ${tripData.hotel ? `<div class="stat"><div class="stat-n" style="font-size:11px">${tripData.hotel.split(' ').slice(0,2).join(' ')}</div><div class="stat-l">숙소</div></div>` : ''}
+  `
+}
+
+function renderTabs() {
+  const bar = document.getElementById('tab-bar')
+  bar.innerHTML = ''
+  const allBtn = mkTab('all', '전체', '개요')
+  bar.appendChild(allBtn)
+  daysData.forEach(day => {
+    bar.appendChild(mkTab(day.id, `Day ${day.day_number}`, day.date ? mmdd(day.date) : day.title))
+  })
+  if (editMode) {
+    const addBtn = document.createElement('button')
+    addBtn.className = 'tab-btn'
+    addBtn.innerHTML = '<span class="dn">＋</span><span class="dd">날짜추가</span>'
+    addBtn.onclick = addDay
+    bar.appendChild(addBtn)
+  }
+}
+
+function mkTab(id, label, sub) {
+  const btn = document.createElement('button')
+  btn.className = 'tab-btn' + (activeTab === id ? ' active' : '')
+  btn.innerHTML = `<span class="dn">${label}</span><span class="dd">${sub}</span>`
+  btn.onclick = () => switchTab(id)
+  btn.dataset.tab = id
+  return btn
+}
+
+function switchTab(id) {
+  activeTab = id
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id))
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === id))
+}
+
+function renderAll() {
+  const content = document.getElementById('content')
+  content.innerHTML = ''
+
+  // 개요
+  const ovView = document.createElement('div')
+  ovView.className = 'view' + (activeTab === 'all' ? ' active' : '')
+  ovView.dataset.view = 'all'
+  ovView.appendChild(renderOverview())
+  content.appendChild(ovView)
+
+  // 일별
+  daysData.forEach(day => {
+    const view = document.createElement('div')
+    view.className = 'view' + (activeTab === day.id ? ' active' : '')
+    view.dataset.view = day.id
+    view.appendChild(renderDay(day))
+    content.appendChild(view)
+  })
+
+  if (editMode) content.classList.add('edit-mode')
+  else content.classList.remove('edit-mode')
+}
+
+function renderOverview() {
+  const grid = document.createElement('div')
+  grid.className = 'overview-grid'
+  daysData.forEach(day => {
+    const acts = activitiesData[day.id] || []
+    const card = document.createElement('div')
+    card.className = 'ov-card'
+    const items = acts.slice(0, 5).map(a => `
+      <div class="ov-item">
+        <div class="ov-dot type-${a.type}" style="outline:1px solid rgba(0,0,0,.08)"></div>
+        <span>${a.time ? a.time + ' ' : ''}${a.name}</span>
+      </div>`).join('')
+    const more = acts.length > 5 ? `<div class="ov-item" style="color:#bbb;font-size:10px">+ ${acts.length - 5}개 더</div>` : ''
+    card.innerHTML = `
+      <div class="ov-day">Day ${day.day_number} · ${day.date ? mmdd(day.date) : ''}</div>
+      <div class="ov-title">${day.title || `Day ${day.day_number}`}</div>
+      <div class="ov-items">${items}${more}</div>`
+    card.onclick = () => switchTab(day.id)
+    grid.appendChild(card)
+  })
+  return grid
+}
+
+function renderDay(day) {
+  const acts = activitiesData[day.id] || []
+  const wrap = document.createElement('div')
+
+  // 툴바
+  const toolbar = document.createElement('div')
+  toolbar.style.cssText = 'display:flex;gap:8px;margin-bottom:14px;align-items:center'
+  toolbar.innerHTML = `<button class="btn" onclick="printDay('${day.id}')">🖨️ 인쇄</button>`
+  if (editMode) {
+    const editDayBtn = document.createElement('button')
+    editDayBtn.className = 'btn'
+    editDayBtn.textContent = '✏️ 날짜 정보 수정'
+    editDayBtn.onclick = () => editDayInfo(day)
+    toolbar.appendChild(editDayBtn)
+  }
+  wrap.appendChild(toolbar)
+
+  // 헤더
+  const head = document.createElement('div')
+  head.className = 'day-head'
+  head.innerHTML = `
+    <div class="day-head-label">Day ${day.day_number} · ${day.date ? fmtDate(day.date) : ''}</div>
+    <div class="day-head-title">${day.title || `Day ${day.day_number}`}</div>
+    ${day.memo ? `<div class="day-head-memo">${day.memo}</div>` : ''}`
+  wrap.appendChild(head)
+
+  // 레이아웃
+  const layout = document.createElement('div')
+  layout.className = 'day-layout'
+
+  // 타임라인
+  const tlWrap = document.createElement('div')
+  const tl = document.createElement('div')
+  tl.className = 'timeline'
+  acts.forEach(act => tl.appendChild(renderActivity(act, day.id)))
+
+  if (editMode) {
+    const addBtn = document.createElement('button')
+    addBtn.className = 'add-activity-btn'
+    addBtn.textContent = '＋ 활동 추가'
+    addBtn.onclick = () => openActModal(null, day.id)
+    tl.appendChild(addBtn)
+  }
+  tlWrap.appendChild(tl)
+  layout.appendChild(tlWrap)
+
+  // 비용 패널
+  layout.appendChild(renderCostPanel(acts))
+
+  wrap.appendChild(layout)
+  return wrap
+}
+
+function renderActivity(act, dayId) {
+  const el = document.createElement('div')
+  el.className = 'tl-item'
+  el.dataset.id = act.id
+
+  const icon = TYPE_ICONS[act.type] || '📍'
+  const typeLabel = TYPE_LABELS[act.type] || ''
+  const costStr = act.cost_per_person ? `<span style="font-size:10px;color:#aaa;margin-left:auto">${fmtCost(act.cost_per_person, act.currency)}</span>` : ''
+
+  let links = ''
+  if (act.map_url) links += `<a class="tl-link" href="${act.map_url}" target="_blank">📍 지도</a>`
+  if (act.blog_url) links += `<a class="tl-link" href="${act.blog_url}" target="_blank">📝 블로그</a>`
+
+  el.innerHTML = `
+    <div class="tl-icon type-${act.type}">${icon}</div>
+    <div class="tl-row1">
+      <span class="tl-time">${act.time || ''}</span>
+      <span class="tl-type-badge">${typeLabel}</span>
+      ${costStr}
+    </div>
+    <div class="tl-name">${act.name || ''}</div>
+    ${act.description ? `<div class="tl-desc">${act.description}</div>` : ''}
+    ${links ? `<div class="tl-links">${links}</div>` : ''}
+    ${act.memo ? `<div class="tl-memo">💡 ${act.memo}</div>` : ''}
+    ${editMode ? `<div class="tl-actions">
+      <button class="tl-action-btn" onclick="openActModal('${act.id}', '${dayId}')">수정</button>
+      <button class="tl-action-btn del" onclick="deleteActivity('${act.id}', '${dayId}')">삭제</button>
+    </div>` : ''}
+  `
+  return el
+}
+
+function renderCostPanel(acts) {
+  const panel = document.createElement('div')
+  panel.className = 'cost-panel'
+
+  const withCost = acts.filter(a => a.cost_per_person || a.cost_total)
+  if (!withCost.length) {
+    panel.innerHTML = '<h4>비용</h4><div style="font-size:12px;color:#ccc;text-align:center;padding:20px 0">비용 없음</div>'
+    return panel
+  }
+
+  const totals = {}
+  withCost.forEach(a => {
+    const cur = a.currency || 'KRW'
+    if (!totals[cur]) totals[cur] = { pp: 0, total: 0 }
+    totals[cur].pp += parseFloat(a.cost_per_person) || 0
+    totals[cur].total += parseFloat(a.cost_total) || 0
+  })
+
+  const items = withCost.map(a => `
+    <div class="cost-item">
+      <div class="cost-name">${a.name}</div>
+      <div class="cost-vals">
+        ${a.cost_per_person ? `<div class="cost-pp">1인 ${fmtCost(a.cost_per_person, a.currency)}</div>` : ''}
+        ${a.cost_total ? `<div class="cost-total">총 ${fmtCost(a.cost_total, a.currency)}</div>` : ''}
+      </div>
+    </div>`).join('')
+
+  const sums = Object.entries(totals).map(([cur, v]) => `
+    <div class="cost-sum-row">
+      <span class="cost-sum-label">1인 합계 (${cur})</span>
+      <span class="cost-sum-val">${fmtCost(v.pp, cur)}</span>
+    </div>
+    <div class="cost-sum-row">
+      <span class="cost-sum-label">총 합계 (${cur})</span>
+      <span class="cost-sum-val">${fmtCost(v.total, cur)}</span>
+    </div>`).join('')
+
+  panel.innerHTML = `<h4>비용</h4>${items}<hr class="cost-divider"><div class="cost-sum">${sums}</div>`
+  return panel
+}
+
+// ── 활동 모달 ──
+document.getElementById('act-cancel').onclick = () => document.getElementById('act-modal').classList.remove('show')
+document.getElementById('act-save').onclick = saveActivity
+
+function openActModal(actId, dayId) {
+  editingActId = actId
+  document.getElementById('act-day-id').value = dayId
+  document.getElementById('act-modal-title').textContent = actId ? '활동 수정' : '활동 추가'
+
+  if (actId) {
+    const acts = Object.values(activitiesData).flat()
+    const act = acts.find(a => a.id === actId)
+    if (act) {
+      document.getElementById('act-id').value = act.id
+      document.getElementById('act-time').value = act.time || ''
+      document.getElementById('act-type').value = act.type || 'sight'
+      document.getElementById('act-name').value = act.name || ''
+      document.getElementById('act-desc').value = act.description || ''
+      document.getElementById('act-memo').value = act.memo || ''
+      document.getElementById('act-cost-pp').value = act.cost_per_person || ''
+      document.getElementById('act-cost-total').value = act.cost_total || ''
+      document.getElementById('act-currency').value = act.currency || 'KRW'
+      document.getElementById('act-map').value = act.map_url || ''
+      document.getElementById('act-blog').value = act.blog_url || ''
+    }
+  } else {
+    document.getElementById('act-id').value = ''
+    document.getElementById('act-time').value = ''
+    document.getElementById('act-type').value = 'sight'
+    document.getElementById('act-name').value = ''
+    document.getElementById('act-desc').value = ''
+    document.getElementById('act-memo').value = ''
+    document.getElementById('act-cost-pp').value = ''
+    document.getElementById('act-cost-total').value = ''
+    document.getElementById('act-currency').value = 'KRW'
+    document.getElementById('act-map').value = ''
+    document.getElementById('act-blog').value = ''
+  }
+  document.getElementById('act-modal').classList.add('show')
+  document.getElementById('act-name').focus()
+}
+
+async function saveActivity() {
+  const dayId = document.getElementById('act-day-id').value
+  const actId = document.getElementById('act-id').value
+  const payload = {
+    day_id: dayId,
+    time: document.getElementById('act-time').value,
+    type: document.getElementById('act-type').value,
+    name: document.getElementById('act-name').value,
+    description: document.getElementById('act-desc').value,
+    memo: document.getElementById('act-memo').value,
+    cost_per_person: parseFloat(document.getElementById('act-cost-pp').value) || null,
+    cost_total: parseFloat(document.getElementById('act-cost-total').value) || null,
+    currency: document.getElementById('act-currency').value,
+    map_url: document.getElementById('act-map').value || null,
+    blog_url: document.getElementById('act-blog').value || null,
+  }
+  if (!payload.name) return
+
+  if (actId) {
+    await sb.from('activities').update(payload).eq('id', actId)
+  } else {
+    await sb.from('activities').insert(payload)
+  }
+  document.getElementById('act-modal').classList.remove('show')
+  await reloadActivities(dayId)
+  renderAll()
+}
+
+async function deleteActivity(actId, dayId) {
+  if (!confirm('이 활동을 삭제할까요?')) return
+  await sb.from('activities').delete().eq('id', actId)
+  await reloadActivities(dayId)
+  renderAll()
+}
+
+async function reloadActivities(dayId) {
+  const { data } = await sb.from('activities').select('*').eq('day_id', dayId).order('sort_order').order('time')
+  activitiesData[dayId] = data || []
+}
+
+// ── 날짜(Day) 추가 ──
+async function addDay() {
+  const nextNum = daysData.length + 1
+  const { data } = await sb.from('days').insert({
+    trip_id: tripData.id,
+    day_number: nextNum,
+    title: `Day ${nextNum}`,
+    date: null, memo: ''
+  }).select().single()
+  if (data) {
+    daysData.push(data)
+    activitiesData[data.id] = []
+    activeTab = data.id
+    renderTabs()
+    renderAll()
+  }
+}
+
+// ── 날짜 정보 수정 (간단 prompt 방식) ──
+async function editDayInfo(day) {
+  const title = prompt('날짜 제목:', day.title || '')
+  if (title === null) return
+  const date = prompt('날짜 (YYYY-MM-DD):', day.date || '')
+  const memo = prompt('메모:', day.memo || '')
+  await sb.from('days').update({ title, date: date || null, memo }).eq('id', day.id)
+  const idx = daysData.findIndex(d => d.id === day.id)
+  if (idx !== -1) daysData[idx] = { ...daysData[idx], title, date, memo }
+  renderTabs()
+  renderAll()
+}
+
+// ── 인쇄 ──
+function printDay(dayId) {
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.remove('print-target')
+    if (v.dataset.view === dayId) v.classList.add('print-target')
+  })
+  window.print()
+}
+
+// ── PIN ──
+document.getElementById('lock-btn').onclick = () => {
+  if (editMode) { exitEdit(); return }
+  document.getElementById('modal-bg').classList.add('show')
+  setTimeout(() => document.getElementById('pin-input').focus(), 100)
+}
+document.getElementById('pin-cancel').onclick = () => document.getElementById('modal-bg').classList.remove('show')
+document.getElementById('pin-confirm').onclick = checkPin
+document.getElementById('pin-input').onkeydown = e => { if (e.key === 'Enter') checkPin() }
+
+async function checkPin() {
+  const val = document.getElementById('pin-input').value
+  const { data } = await sb.from('config').select('value').eq('key', 'edit_pin').single()
+  if (data && data.value === val) {
+    editMode = true
+    document.getElementById('modal-bg').classList.remove('show')
+    document.getElementById('lock-btn').textContent = '✏️'
+    document.getElementById('lock-btn').classList.add('unlocked')
+    document.getElementById('pin-input').value = ''
+    document.getElementById('pin-error').style.display = 'none'
+    renderTabs()
+    renderAll()
+  } else {
+    document.getElementById('pin-error').style.display = 'block'
+  }
+}
+
+function exitEdit() {
+  editMode = false
+  document.getElementById('lock-btn').textContent = '🔒'
+  document.getElementById('lock-btn').classList.remove('unlocked')
+  renderTabs()
+  renderAll()
+}
+
+// ── 유틸 ──
+function fmtDate(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  return `${dt.getMonth()+1}월 ${dt.getDate()}일`
+}
+function mmdd(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  return `${dt.getMonth()+1}/${dt.getDate()}`
+}
+function fmtCost(n, cur) {
+  if (!n) return ''
+  const num = parseFloat(n)
+  if (cur === 'KRW') return num.toLocaleString() + '원'
+  if (cur === 'JPY') return '¥' + num.toLocaleString()
+  if (cur === 'USD') return '$' + num.toFixed(0)
+  if (cur === 'EUR') return '€' + num.toFixed(0)
+  return num.toLocaleString()
+}
+
+// 자동 잠금 30분
+let lockTimer = null
+document.addEventListener('click', () => {
+  if (!editMode) return
+  clearTimeout(lockTimer)
+  lockTimer = setTimeout(exitEdit, 30 * 60 * 1000)
+})
+
+init()
+</script>
+</body>
+</html>

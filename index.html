@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>여행 플래너</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page-header">
+  <h1>✈️ 여행 플래너</h1>
+  <p>우리 가족 여행 일정</p>
+</div>
+
+<div class="trips-container">
+  <div id="trips-grid" class="trips-grid">
+    <div class="loading">불러오는 중...</div>
+  </div>
+</div>
+
+<!-- PIN 모달 -->
+<button class="lock-btn" id="lock-btn" title="편집 모드">🔒</button>
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3>편집 모드</h3>
+    <p>PIN 번호를 입력하세요</p>
+    <input type="password" class="pin-input" id="pin-input" maxlength="4" placeholder="••••">
+    <div class="pin-error" id="pin-error">PIN이 틀렸습니다</div>
+    <div class="modal-actions">
+      <button class="btn" id="pin-cancel">취소</button>
+      <button class="btn btn-primary" id="pin-confirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 새 여행 추가 모달 -->
+<div class="modal-bg" id="new-trip-modal">
+  <div class="modal" style="width:360px">
+    <h3>새 여행 추가</h3>
+    <p style="margin-bottom:16px"></p>
+    <div style="display:flex;flex-direction:column;gap:10px;text-align:left">
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">여행 제목</label>
+        <input type="text" id="new-title" placeholder="2026 일본 여행" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;outline:none">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">목적지</label>
+        <input type="text" id="new-dest" placeholder="도쿄, 일본" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;outline:none">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">출발일</label>
+          <input type="date" id="new-start" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">귀국일</label>
+          <input type="date" id="new-end" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;outline:none">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">인원</label>
+          <input type="number" id="new-people" placeholder="4" min="1" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">항공사</label>
+          <input type="text" id="new-airline" placeholder="티웨이항공" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;outline:none">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">숙소</label>
+        <input type="text" id="new-hotel" placeholder="로열 오키드 괌 호텔" style="width:100%;padding:8px 10px;border:1.5px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:14px;outline:none">
+      </div>
+    </div>
+    <div style="margin-top:20px" class="modal-actions">
+      <button class="btn" id="new-cancel">취소</button>
+      <button class="btn btn-primary" id="new-confirm">만들기</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+let editMode = false
+
+async function loadTrips() {
+  const grid = document.getElementById('trips-grid')
+  const { data, error } = await sb.from('trips').select('*').order('start_date', { ascending: false })
+  if (error) { grid.innerHTML = `<div class="error-msg">불러오기 실패: ${error.message}</div>`; return }
+
+  grid.innerHTML = ''
+  data.forEach(trip => {
+    const nights = trip.start_date && trip.end_date
+      ? Math.round((new Date(trip.end_date) - new Date(trip.start_date)) / 86400000)
+      : null
+    const card = document.createElement('a')
+    card.className = 'trip-card'
+    card.href = `trip.html?slug=${trip.slug}`
+    card.innerHTML = `
+      <div class="dest">${trip.destination || ''}</div>
+      <div class="title">${trip.title}</div>
+      <div class="dates">${fmtDate(trip.start_date)} ~ ${fmtDate(trip.end_date)}</div>
+      <div class="meta">
+        ${nights ? `<span class="tag">🌙 ${nights}박 ${nights+1}일</span>` : ''}
+        ${trip.people_count ? `<span class="tag">👥 ${trip.people_count}명</span>` : ''}
+        ${trip.airline ? `<span class="tag">✈️ ${trip.airline}</span>` : ''}
+      </div>
+    `
+    grid.appendChild(card)
+  })
+
+  if (editMode) {
+    const addCard = document.createElement('div')
+    addCard.className = 'add-card'
+    addCard.innerHTML = '＋ 새 여행 추가'
+    addCard.onclick = () => document.getElementById('new-trip-modal').classList.add('show')
+    grid.appendChild(addCard)
+  }
+}
+
+function fmtDate(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  return `${dt.getMonth()+1}월 ${dt.getDate()}일`
+}
+
+// PIN
+document.getElementById('lock-btn').onclick = () => {
+  if (editMode) { exitEdit(); return }
+  document.getElementById('modal-bg').classList.add('show')
+  document.getElementById('pin-input').focus()
+}
+document.getElementById('pin-cancel').onclick = () => document.getElementById('modal-bg').classList.remove('show')
+document.getElementById('pin-confirm').onclick = checkPin
+document.getElementById('pin-input').onkeydown = e => { if (e.key === 'Enter') checkPin() }
+
+async function checkPin() {
+  const val = document.getElementById('pin-input').value
+  const { data } = await sb.from('config').select('value').eq('key', 'edit_pin').single()
+  if (data && data.value === val) {
+    editMode = true
+    document.getElementById('modal-bg').classList.remove('show')
+    document.getElementById('lock-btn').textContent = '✏️'
+    document.getElementById('lock-btn').classList.add('unlocked')
+    document.getElementById('pin-input').value = ''
+    loadTrips()
+  } else {
+    document.getElementById('pin-error').style.display = 'block'
+  }
+}
+
+function exitEdit() {
+  editMode = false
+  document.getElementById('lock-btn').textContent = '🔒'
+  document.getElementById('lock-btn').classList.remove('unlocked')
+  loadTrips()
+}
+
+// 새 여행 추가
+document.getElementById('new-cancel').onclick = () => document.getElementById('new-trip-modal').classList.remove('show')
+document.getElementById('new-confirm').onclick = async () => {
+  const title = document.getElementById('new-title').value.trim()
+  if (!title) return
+  const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9가-힣-]/g, '')
+  const { error } = await sb.from('trips').insert({
+    slug, title,
+    destination: document.getElementById('new-dest').value,
+    start_date: document.getElementById('new-start').value || null,
+    end_date: document.getElementById('new-end').value || null,
+    people_count: parseInt(document.getElementById('new-people').value) || null,
+    airline: document.getElementById('new-airline').value,
+    hotel: document.getElementById('new-hotel').value
+  })
+  if (!error) {
+    document.getElementById('new-trip-modal').classList.remove('show')
+    loadTrips()
+  }
+}
+
+loadTrips()
+</script>
+</body>
+</html>
