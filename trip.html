@@ -225,7 +225,10 @@ function renderTabs() {
   const allBtn = mkTab('all', '전체', '개요')
   bar.appendChild(allBtn)
   daysData.forEach(day => {
-    bar.appendChild(mkTab(day.id, `Day ${day.day_number}`, day.date ? mmdd(day.date) : day.title))
+    const d = getDayDate(day)
+    const main = d ? `${d.getMonth()+1}/${d.getDate()}` : `Day ${day.day_number}`
+    const sub  = d ? `(Day ${day.day_number})` : ''
+    bar.appendChild(mkTab(day.id, main, sub))
   })
   if (editMode) {
     const addBtn = document.createElement('button')
@@ -276,26 +279,89 @@ function renderAll() {
 }
 
 function renderOverview() {
-  const grid = document.createElement('div')
-  grid.className = 'overview-grid'
+  const wrap = document.createElement('div')
+
+  if (!daysData.length) {
+    wrap.innerHTML = '<div class="loading">일정을 추가하면 전체 개요가 표시됩니다.</div>'
+    return wrap
+  }
+
+  // 시간 → dayId → 활동 맵 구성
+  const timeMap = {}
   daysData.forEach(day => {
-    const acts = activitiesData[day.id] || []
-    const card = document.createElement('div')
-    card.className = 'ov-card'
-    const items = acts.slice(0, 5).map(a => `
-      <div class="ov-item">
-        <div class="ov-dot type-${a.type}" style="outline:1px solid rgba(0,0,0,.08)"></div>
-        <span>${a.time ? a.time + ' ' : ''}${a.name}</span>
-      </div>`).join('')
-    const more = acts.length > 5 ? `<div class="ov-item" style="color:#bbb;font-size:10px">+ ${acts.length - 5}개 더</div>` : ''
-    card.innerHTML = `
-      <div class="ov-day">Day ${day.day_number} · ${day.date ? mmdd(day.date) : ''}</div>
-      <div class="ov-title">${day.title || `Day ${day.day_number}`}</div>
-      <div class="ov-items">${items}${more}</div>`
-    card.onclick = () => switchTab(day.id)
-    grid.appendChild(card)
+    ;(activitiesData[day.id] || []).forEach(act => {
+      const t = act.time ? act.time.split('~')[0].trim() : '-'
+      if (!timeMap[t]) timeMap[t] = {}
+      if (!timeMap[t][day.id]) timeMap[t][day.id] = []
+      timeMap[t][day.id].push(act)
+    })
   })
-  return grid
+
+  const times = Object.keys(timeMap).sort((a, b) => {
+    if (a === '-') return 1
+    if (b === '-') return -1
+    return a.localeCompare(b)
+  })
+
+  const outer = document.createElement('div')
+  outer.style.cssText = 'overflow-x:auto;border:1px solid #e8e6e0;border-radius:12px;'
+
+  const table = document.createElement('table')
+  table.style.cssText = 'width:100%;border-collapse:collapse;'
+
+  // 헤더행 (날짜)
+  const thead = document.createElement('thead')
+  const hrow = document.createElement('tr')
+  const th0 = document.createElement('th')
+  th0.style.cssText = 'width:58px;padding:10px 8px;font-size:11px;color:#bbb;font-weight:400;border-bottom:1.5px solid #e8e6e0;background:#faf9f6;position:sticky;left:0;'
+  th0.textContent = '시간'
+  hrow.appendChild(th0)
+
+  daysData.forEach(day => {
+    const d = getDayDate(day)
+    const th = document.createElement('th')
+    th.style.cssText = 'padding:10px 14px;text-align:left;border-bottom:1.5px solid #e8e6e0;border-left:1px solid #f0ede8;background:#faf9f6;min-width:150px;cursor:pointer;'
+    th.innerHTML = d
+      ? `<div style="font-size:13px;font-weight:600">${d.getMonth()+1}월 ${d.getDate()}일</div><div style="font-size:10px;color:#aaa;margin-top:1px">${day.title || 'Day '+day.day_number}</div>`
+      : `<div style="font-size:13px;font-weight:600">Day ${day.day_number}</div>`
+    th.onclick = () => switchTab(day.id)
+    hrow.appendChild(th)
+  })
+  thead.appendChild(hrow)
+  table.appendChild(thead)
+
+  // 바디행 (시간대별)
+  const tbody = document.createElement('tbody')
+  times.forEach((time, i) => {
+    const tr = document.createElement('tr')
+    const bg = i % 2 === 0 ? '#fff' : '#fdfcfb'
+
+    const td0 = document.createElement('td')
+    td0.style.cssText = `padding:8px;font-size:11px;color:#bbb;text-align:center;border-bottom:1px solid #f5f3f0;white-space:nowrap;position:sticky;left:0;background:${bg};`
+    td0.textContent = time === '-' ? '' : time
+    tr.appendChild(td0)
+
+    daysData.forEach(day => {
+      const td = document.createElement('td')
+      td.style.cssText = `padding:7px 14px;border-bottom:1px solid #f5f3f0;border-left:1px solid #f0ede8;vertical-align:top;background:${bg};`
+      const acts = (timeMap[time]?.[day.id]) || []
+      acts.forEach(act => {
+        const row = document.createElement('div')
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:5px;margin-bottom:3px;cursor:pointer;'
+        row.innerHTML = `
+          <span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px" class="ov-dot type-${act.type}"></span>
+          <span style="font-size:12px;color:#333;line-height:1.4">${act.name}</span>`
+        row.onclick = () => switchTab(day.id)
+        td.appendChild(row)
+      })
+      tr.appendChild(td)
+    })
+    tbody.appendChild(tr)
+  })
+  table.appendChild(tbody)
+  outer.appendChild(table)
+  wrap.appendChild(outer)
+  return wrap
 }
 
 function renderDay(day) {
@@ -318,8 +384,12 @@ function renderDay(day) {
   // 헤더
   const head = document.createElement('div')
   head.className = 'day-head'
+  const dd = getDayDate(day)
+  const dayLabel = dd
+    ? `${dd.getMonth()+1}월 ${dd.getDate()}일 (Day ${day.day_number})`
+    : `Day ${day.day_number}`
   head.innerHTML = `
-    <div class="day-head-label">Day ${day.day_number} · ${day.date ? fmtDate(day.date) : ''}</div>
+    <div class="day-head-label">${dayLabel}</div>
     <div class="day-head-title">${day.title || `Day ${day.day_number}`}</div>`
   wrap.appendChild(head)
 
@@ -655,6 +725,20 @@ function fmtDate(d) {
   const dt = new Date(d)
   return `${dt.getMonth()+1}월 ${dt.getDate()}일`
 }
+function getDayDate(day) {
+  if (day.date) return new Date(day.date)
+  if (tripData.start_date) {
+    const d = new Date(tripData.start_date)
+    d.setDate(d.getDate() + day.day_number - 1)
+    return d
+  }
+  return null
+}
+function getDayDateStr(day) {
+  const d = getDayDate(day)
+  return d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : null
+}
+
 function mmdd(d) {
   if (!d) return ''
   const dt = new Date(d)
