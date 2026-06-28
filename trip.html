@@ -385,12 +385,13 @@ function renderDay(day) {
   const head = document.createElement('div')
   head.className = 'day-head'
   const dd = getDayDate(day)
-  const dayLabel = dd
-    ? `${dd.getMonth()+1}월 ${dd.getDate()}일 (Day ${day.day_number})`
-    : `Day ${day.day_number}`
+  const dateStr = dd ? `${dd.getMonth()+1}월 ${dd.getDate()}일` : `Day ${day.day_number}`
+  const dayNumStr = dd ? ` <span style="font-size:14px;font-weight:400;color:#aaa">(Day ${day.day_number})</span>` : ''
+  const defaultTitle = `Day ${day.day_number}`
+  const customTitle = day.title && day.title !== defaultTitle ? day.title : ''
   head.innerHTML = `
-    <div class="day-head-label">${dayLabel}</div>
-    <div class="day-head-title">${day.title || `Day ${day.day_number}`}</div>`
+    <div class="day-head-title">${dateStr}${dayNumStr}</div>
+    ${customTitle ? `<div class="day-head-memo" style="margin-top:2px">${customTitle}</div>` : ''}`
   wrap.appendChild(head)
 
   // 레이아웃
@@ -496,27 +497,40 @@ function renderActivity(act, dayId) {
 
   const icon = TYPE_ICONS[act.type] || '📍'
   const typeLabel = TYPE_LABELS[act.type] || ''
-  const costStr = act.cost_per_person ? `<span style="font-size:10px;color:#aaa;margin-left:auto">${fmtCost(act.cost_per_person, act.currency)}</span>` : ''
+
+  const timeParts = (act.time || '').split('~')
+  const timeMain = timeParts[0]?.trim() || ''
+  const timeEnd  = timeParts[1]?.trim() || ''
 
   let links = ''
   if (act.map_url) links += `<a class="tl-link" href="${act.map_url}" target="_blank">📍 지도</a>`
   if (act.blog_url) links += `<a class="tl-link" href="${act.blog_url}" target="_blank">📝 블로그</a>`
 
+  const costStr = act.cost_per_person
+    ? `<span style="font-size:11px;color:#aaa;margin-left:auto">${fmtCost(act.cost_per_person, act.currency)}</span>` : ''
+
   el.innerHTML = `
-    <div class="tl-icon type-${act.type}">${icon}</div>
-    <div class="tl-row1">
-      <span class="tl-time">${act.time || ''}</span>
-      <span class="tl-type-badge">${typeLabel}</span>
-      ${costStr}
+    <div class="tl-time-col">
+      ${timeMain}
+      ${timeEnd ? `<small>~${timeEnd}</small>` : ''}
     </div>
-    <div class="tl-name">${act.name || ''}</div>
-    ${act.description ? `<div class="tl-desc">${act.description}</div>` : ''}
-    ${links ? `<div class="tl-links">${links}</div>` : ''}
-    ${act.memo ? `<div class="tl-memo">💡 ${act.memo}</div>` : ''}
-    ${editMode ? `<div class="tl-actions">
-      <button class="tl-action-btn" onclick="openActModal('${act.id}', '${dayId}')">수정</button>
-      <button class="tl-action-btn del" onclick="deleteActivity('${act.id}', '${dayId}')">삭제</button>
-    </div>` : ''}
+    <div class="tl-icon-col">
+      <div class="tl-icon type-${act.type}">${icon}</div>
+    </div>
+    <div class="tl-card">
+      <div class="tl-row1">
+        <span class="tl-type-badge">${typeLabel}</span>
+        ${costStr}
+        ${editMode ? `<span style="margin-left:auto;display:flex;gap:4px">
+          <button class="tl-action-btn" onclick="openActModal('${act.id}','${dayId}')">수정</button>
+          <button class="tl-action-btn del" onclick="deleteActivity('${act.id}','${dayId}')">삭제</button>
+        </span>` : ''}
+      </div>
+      <div class="tl-name">${act.name || ''}</div>
+      ${act.description ? `<div class="tl-desc">${act.description}</div>` : ''}
+      ${links ? `<div class="tl-links">${links}</div>` : ''}
+      ${act.memo ? `<div class="tl-memo">💡 ${act.memo}</div>` : ''}
+    </div>
   `
   return el
 }
