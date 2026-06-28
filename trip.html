@@ -347,7 +347,76 @@ function renderDay(day) {
   layout.appendChild(renderCostPanel(acts))
 
   wrap.appendChild(layout)
+
+  // 하단 메모
+  wrap.appendChild(renderDayNotes(day))
+
   return wrap
+}
+
+function renderDayNotes(day) {
+  const section = document.createElement('div')
+  section.style.cssText = 'margin-top:20px;padding-top:16px;border-top:1px solid #e8e6e0;'
+
+  if (day.memo) {
+    const box = document.createElement('div')
+    box.style.cssText = 'background:#faf9f6;border:1px solid #e8e6e0;border-radius:10px;padding:14px 16px;'
+    box.innerHTML = `<div style="font-size:11px;color:#bbb;margin-bottom:6px;font-weight:500">메모</div>`
+
+    const text = document.createElement('div')
+    text.style.cssText = 'font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;outline:none;'
+    text.textContent = day.memo
+
+    if (editMode) {
+      text.contentEditable = 'true'
+      text.style.cursor = 'text'
+      text.addEventListener('blur', async () => {
+        const val = text.textContent.trim()
+        await sb.from('days').update({ memo: val || null }).eq('id', day.id)
+        const idx = daysData.findIndex(d => d.id === day.id)
+        if (idx !== -1) daysData[idx].memo = val || null
+        if (!val) renderAll()
+      })
+
+      const delBtn = document.createElement('button')
+      delBtn.textContent = '메모 삭제'
+      delBtn.style.cssText = 'margin-top:8px;font-size:11px;color:#bbb;background:none;border:none;cursor:pointer;padding:0;font-family:inherit;'
+      delBtn.onclick = async () => {
+        if (!confirm('메모를 삭제할까요?')) return
+        await sb.from('days').update({ memo: null }).eq('id', day.id)
+        const idx = daysData.findIndex(d => d.id === day.id)
+        if (idx !== -1) daysData[idx].memo = null
+        renderAll()
+      }
+      box.appendChild(text)
+      box.appendChild(delBtn)
+    } else {
+      box.appendChild(text)
+    }
+
+    section.appendChild(box)
+
+  } else if (editMode) {
+    const addBtn = document.createElement('button')
+    addBtn.style.cssText = 'width:100%;padding:10px;border:1.5px dashed #ddd;border-radius:10px;background:none;color:#bbb;font-size:13px;cursor:pointer;font-family:inherit;transition:.2s;'
+    addBtn.textContent = '＋ 메모 추가'
+    addBtn.onmouseover = () => { addBtn.style.borderColor='#aaa'; addBtn.style.color='#888' }
+    addBtn.onmouseout = () => { addBtn.style.borderColor='#ddd'; addBtn.style.color='#bbb' }
+    addBtn.onclick = async () => {
+      await sb.from('days').update({ memo: ' ' }).eq('id', day.id)
+      const idx = daysData.findIndex(d => d.id === day.id)
+      if (idx !== -1) daysData[idx].memo = ' '
+      renderAll()
+      setTimeout(() => {
+        const activeView = document.querySelector('.view.active')
+        const noteText = activeView?.querySelector('[contenteditable]')
+        if (noteText) { noteText.focus(); noteText.textContent = ''; }
+      }, 50)
+    }
+    section.appendChild(addBtn)
+  }
+
+  return section
 }
 
 function renderActivity(act, dayId) {
