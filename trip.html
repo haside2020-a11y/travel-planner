@@ -27,16 +27,14 @@
 
 <!-- 헤더 -->
 <div class="trip-header">
-  <div class="trip-header-top">
-    <div>
-      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:4px">
-        <a href="index.html" style="color:rgba(255,255,255,.4)">← 목록으로</a>
-      </div>
-      <h1 id="hdr-title">불러오는 중...</h1>
-      <div class="sub" id="hdr-sub"></div>
-    </div>
+  <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:6px">
+    <a href="index.html" style="color:rgba(255,255,255,.35)">← 목록으로</a>
   </div>
-  <div class="trip-stats" id="hdr-stats"></div>
+  <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+    <h1 id="hdr-title" style="font-size:18px;font-weight:600">불러오는 중...</h1>
+    <div id="hdr-stats"></div>
+  </div>
+  <div class="sub" id="hdr-sub" style="margin-top:2px"></div>
 </div>
 
 <!-- 탭 -->
@@ -206,17 +204,19 @@ async function init(forceNetwork = false) {
 
 function renderHeader() {
   document.title = tripData.title
-  document.getElementById('hdr-title').textContent = tripData.title
-  document.getElementById('hdr-sub').textContent = `${tripData.destination || ''} · ${fmtDate(tripData.start_date)} ~ ${fmtDate(tripData.end_date)}`
   const nights = tripData.start_date && tripData.end_date
     ? Math.round((new Date(tripData.end_date) - new Date(tripData.start_date)) / 86400000) : null
-  document.getElementById('hdr-stats').innerHTML = `
-    ${nights ? `<div class="stat"><div class="stat-n">${nights}박</div><div class="stat-l">숙박</div></div>` : ''}
-    ${daysData.length ? `<div class="stat"><div class="stat-n">${daysData.length}일</div><div class="stat-l">일정</div></div>` : ''}
-    ${tripData.people_count ? `<div class="stat"><div class="stat-n">${tripData.people_count}명</div><div class="stat-l">인원</div></div>` : ''}
-    ${tripData.airline ? `<div class="stat"><div class="stat-n" style="font-size:12px">${tripData.airline}</div><div class="stat-l">항공</div></div>` : ''}
-    ${tripData.hotel ? `<div class="stat"><div class="stat-n" style="font-size:11px">${tripData.hotel.split(' ').slice(0,2).join(' ')}</div><div class="stat-l">숙소</div></div>` : ''}
-  `
+  const metas = [
+    nights ? `${nights}박 ${nights+1}일` : null,
+    tripData.people_count ? `${tripData.people_count}명` : null,
+    tripData.airline || null,
+    tripData.hotel || null
+  ].filter(Boolean).join(' · ')
+
+  document.getElementById('hdr-title').textContent = tripData.title
+  document.getElementById('hdr-sub').textContent = `${tripData.destination || ''} · ${fmtDate(tripData.start_date)} ~ ${fmtDate(tripData.end_date)}`
+  document.getElementById('hdr-stats').innerHTML = metas
+    ? `<span style="font-size:11px;color:rgba(255,255,255,.4)">${metas}</span>` : ''
 }
 
 function renderTabs() {
@@ -320,8 +320,7 @@ function renderDay(day) {
   head.className = 'day-head'
   head.innerHTML = `
     <div class="day-head-label">Day ${day.day_number} · ${day.date ? fmtDate(day.date) : ''}</div>
-    <div class="day-head-title">${day.title || `Day ${day.day_number}`}</div>
-    ${day.memo ? `<div class="day-head-memo">${day.memo}</div>` : ''}`
+    <div class="day-head-title">${day.title || `Day ${day.day_number}`}</div>`
   wrap.appendChild(head)
 
   // 레이아웃
@@ -372,7 +371,7 @@ function renderDayNotes(day) {
       text.contentEditable = 'true'
       text.style.cursor = 'text'
       text.addEventListener('blur', async () => {
-        const val = text.textContent.trim()
+        const val = text.innerText.trim()
         await sb.from('days').update({ memo: val || null }).eq('id', day.id)
         const idx = daysData.findIndex(d => d.id === day.id)
         if (idx !== -1) daysData[idx].memo = val || null
