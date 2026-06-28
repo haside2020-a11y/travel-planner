@@ -69,18 +69,25 @@
     <input type="hidden" id="act-id">
     <input type="hidden" id="act-day-id">
     <div style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div>
-          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">시작시간</label>
-          <select id="act-time-start" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
-            <option value="">선택</option>
+      <div>
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:6px">시간</label>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <select id="act-sh" style="width:64px;padding:7px 6px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
+            <option value="">시</option>
           </select>
-        </div>
-        <div>
-          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">종료시간 <span style="color:#ccc">(선택)</span></label>
-          <select id="act-time-end" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
-            <option value="">없음</option>
+          <span style="color:#ccc">:</span>
+          <select id="act-sm" style="width:64px;padding:7px 6px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
+            <option value="">분</option>
           </select>
+          <span style="color:#bbb;font-size:12px;margin:0 2px">~</span>
+          <select id="act-eh" style="width:64px;padding:7px 6px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff;color:#888">
+            <option value="">시</option>
+          </select>
+          <span style="color:#ccc">:</span>
+          <select id="act-em" style="width:64px;padding:7px 6px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff;color:#888">
+            <option value="">분</option>
+          </select>
+          <span style="font-size:10px;color:#ccc">(종료 선택)</span>
         </div>
       </div>
       <div>
@@ -602,9 +609,7 @@ function openActModal(actId, dayId) {
     const act = acts.find(a => a.id === actId)
     if (act) {
       document.getElementById('act-id').value = act.id
-      const tp = (act.time || '').split('~')
-      document.getElementById('act-time-start').value = tp[0]?.trim() || ''
-      document.getElementById('act-time-end').value = tp[1]?.trim() || ''
+      setTimeVal(act.time || '')
       document.getElementById('act-type').value = act.type || 'sight'
       document.getElementById('act-name').value = act.name || ''
       document.getElementById('act-desc').value = act.description || ''
@@ -617,8 +622,7 @@ function openActModal(actId, dayId) {
     }
   } else {
     document.getElementById('act-id').value = ''
-    document.getElementById('act-time-start').value = ''
-    document.getElementById('act-time-end').value = ''
+    setTimeVal('')
     document.getElementById('act-type').value = 'sight'
     document.getElementById('act-name').value = ''
     document.getElementById('act-desc').value = ''
@@ -638,11 +642,7 @@ async function saveActivity() {
   const actId = document.getElementById('act-id').value
   const payload = {
     day_id: dayId,
-    time: (() => {
-      const s = document.getElementById('act-time-start').value
-      const e = document.getElementById('act-time-end').value
-      return s && e ? `${s}~${e}` : s || ''
-    })(),
+    time: getTimeVal(),
     type: document.getElementById('act-type').value,
     name: document.getElementById('act-name').value,
     description: document.getElementById('act-desc').value,
@@ -858,21 +858,49 @@ function showToast(msg) {
 window.addEventListener('online', updateStatusBar)
 window.addEventListener('offline', updateStatusBar)
 
-// ── 시간 드롭다운 옵션 생성 ──
+// ── 시간/분 드롭다운 옵션 생성 ──
 function buildTimePickers() {
-  const times = []
-  for (let h = 5; h <= 23; h++) {
-    ['00', '30'].forEach(m => times.push(`${String(h).padStart(2,'0')}:${m}`))
-  }
-  ;['act-time-start', 'act-time-end'].forEach(id => {
+  ;['act-sh','act-eh'].forEach(id => {
     const sel = document.getElementById(id)
     if (!sel) return
-    times.forEach(t => {
+    for (let h = 0; h <= 23; h++) {
       const opt = document.createElement('option')
-      opt.value = t; opt.textContent = t
+      opt.value = String(h).padStart(2,'0')
+      opt.textContent = String(h).padStart(2,'0') + '시'
       sel.appendChild(opt)
-    })
+    }
   })
+  ;['act-sm','act-em'].forEach(id => {
+    const sel = document.getElementById(id)
+    if (!sel) return
+    for (let m = 0; m <= 59; m++) {
+      const opt = document.createElement('option')
+      opt.value = String(m).padStart(2,'0')
+      opt.textContent = String(m).padStart(2,'0') + '분'
+      sel.appendChild(opt)
+    }
+  })
+}
+
+function getTimeVal() {
+  const sh = document.getElementById('act-sh').value
+  const sm = document.getElementById('act-sm').value
+  const eh = document.getElementById('act-eh').value
+  const em = document.getElementById('act-em').value
+  if (!sh) return ''
+  const start = `${sh}:${sm || '00'}`
+  const end = eh ? `${eh}:${em || '00'}` : ''
+  return end ? `${start}~${end}` : start
+}
+
+function setTimeVal(timeStr) {
+  const parts = (timeStr || '').split('~')
+  const [sh, sm] = (parts[0] || '').split(':')
+  const [eh, em] = (parts[1] || '').split(':')
+  document.getElementById('act-sh').value = sh || ''
+  document.getElementById('act-sm').value = sm || ''
+  document.getElementById('act-eh').value = eh || ''
+  document.getElementById('act-em').value = em || ''
 }
 
 // 서비스 워커 등록
