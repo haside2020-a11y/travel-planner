@@ -283,9 +283,11 @@ a { color: inherit; text-decoration: none; }
 .add-activity-btn { display: none; }
 
 /* ── 드래그 앤 드롭 ── */
-.tl-card[draggable="true"] { cursor: grab; }
-.tl-card[draggable="true"]:active { cursor: grabbing; }
+.tl-item[draggable="true"] { cursor: grab; }
+.tl-item[draggable="true"]:active { cursor: grabbing; }
 .tl-item.dragging { opacity: .35; }
+.tl-item.drop-before { border-top: 2px solid #1d9e75; }
+.tl-item.drop-after  { border-bottom: 2px solid #1d9e75; }
 .tab-btn.drop-zone { background: #e1f5ee; color: #1d9e75; border-bottom-color: #1d9e75; }
 .tab-btn.drag-over { background: #1d9e75 !important; color: #fff !important; border-bottom-color: #1d9e75; }
 .tab-btn.drag-over .dn, .tab-btn.drag-over .dd { color: #fff; }

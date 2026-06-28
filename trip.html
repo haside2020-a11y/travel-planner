@@ -560,7 +560,7 @@ function renderActivity(act, dayId) {
     <div class="tl-icon-col">
       <div class="tl-icon type-${act.type}">${icon}</div>
     </div>
-    <div class="tl-card" ${editMode ? 'draggable="true"' : ''}>
+    <div class="tl-card">
       <div class="tl-row1">
         <span class="tl-type-badge">${typeLabel}</span>
         ${costStr}
@@ -577,20 +577,70 @@ function renderActivity(act, dayId) {
   `
 
   if (editMode) {
-    const card = el.querySelector('.tl-card')
-    card.addEventListener('dragstart', e => {
+    el.setAttribute('draggable', 'true')
+
+    el.addEventListener('dragstart', e => {
       e.dataTransfer.setData('actId', act.id)
       e.dataTransfer.setData('fromDayId', dayId)
-      el.classList.add('dragging')
+      setTimeout(() => el.classList.add('dragging'), 0)
       document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
         if (btn.dataset.tab !== 'all' && btn.dataset.tab !== dayId)
           btn.classList.add('drop-zone')
       })
     })
-    card.addEventListener('dragend', () => {
+
+    el.addEventListener('dragend', () => {
       el.classList.remove('dragging')
       document.querySelectorAll('.tab-btn').forEach(b =>
         b.classList.remove('drop-zone', 'drag-over'))
+      document.querySelectorAll('.tl-item').forEach(item =>
+        item.classList.remove('drop-before', 'drop-after'))
+    })
+
+    el.addEventListener('dragover', e => {
+      e.preventDefault()
+      const draggingEl = document.querySelector('.tl-item.dragging')
+      if (!draggingEl || draggingEl === el) return
+      document.querySelectorAll('.tl-item').forEach(i =>
+        i.classList.remove('drop-before', 'drop-after'))
+      const rect = el.getBoundingClientRect()
+      if (e.clientY < rect.top + rect.height / 2) {
+        el.classList.add('drop-before')
+      } else {
+        el.classList.add('drop-after')
+      }
+    })
+
+    el.addEventListener('dragleave', () =>
+      el.classList.remove('drop-before', 'drop-after'))
+
+    el.addEventListener('drop', async e => {
+      e.preventDefault()
+      e.stopPropagation()
+      el.classList.remove('drop-before', 'drop-after')
+
+      const actId = e.dataTransfer.getData('actId')
+      const fromDayId = e.dataTransfer.getData('fromDayId')
+      if (actId === act.id || fromDayId !== dayId) return
+
+      const acts = [...(activitiesData[dayId] || [])]
+      const fromIdx = acts.findIndex(a => a.id === actId)
+      const toIdx   = acts.findIndex(a => a.id === act.id)
+      if (fromIdx === -1 || toIdx === -1) return
+
+      const rect = el.getBoundingClientRect()
+      const insertBefore = e.clientY < rect.top + rect.height / 2
+      const [moved] = acts.splice(fromIdx, 1)
+      let insertIdx = acts.findIndex(a => a.id === act.id)
+      if (!insertBefore) insertIdx++
+      acts.splice(insertIdx, 0, moved)
+
+      await Promise.all(acts.map((a, i) =>
+        sb.from('activities').update({ sort_order: i }).eq('id', a.id)
+      ))
+      activitiesData[dayId] = acts.map((a, i) => ({ ...a, sort_order: i }))
+      renderAll()
+      showToast('✅ 순서 변경!')
     })
   }
 
