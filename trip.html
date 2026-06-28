@@ -239,7 +239,7 @@ function renderTabs() {
   daysData.forEach(day => {
     const d = getDayDate(day)
     const main = d ? `${d.getMonth()+1}/${d.getDate()}` : `Day ${day.day_number}`
-    const sub  = d ? `(Day ${day.day_number})` : ''
+    const sub  = d ? `(Day ${day.day_number}) <span style="color:#aaa">${getKorDow(d)}</span>` : ''
     bar.appendChild(mkTab(day.id, main, sub))
   })
   if (editMode) {
@@ -405,11 +405,12 @@ function renderDay(day) {
   head.className = 'day-head'
   const dd = getDayDate(day)
   const dateStr = dd ? `${dd.getMonth()+1}월 ${dd.getDate()}일` : `Day ${day.day_number}`
-  const dayNumStr = dd ? ` <span style="font-size:14px;font-weight:400;color:#aaa">(Day ${day.day_number})</span>` : ''
+  const dow = dd ? ` <span style="font-size:13px;font-weight:400;color:#aaa">${getKorDow(dd)}</span>` : ''
+  const dayNumStr = dd ? ` <span style="font-size:14px;font-weight:400;color:#bbb">(Day ${day.day_number})</span>` : ''
   const defaultTitle = `Day ${day.day_number}`
   const customTitle = day.title && day.title !== defaultTitle ? day.title : ''
   head.innerHTML = `
-    <div class="day-head-title">${dateStr}${dayNumStr}</div>
+    <div class="day-head-title">${dateStr}${dow}${dayNumStr}</div>
     ${customTitle ? `<div class="day-head-memo" style="margin-top:2px">${customTitle}</div>` : ''}`
   wrap.appendChild(head)
 
@@ -758,6 +759,11 @@ function fmtDate(d) {
   const dt = new Date(d)
   return `${dt.getMonth()+1}월 ${dt.getDate()}일`
 }
+const DOW_KO = ['일','월','화','수','목','금','토']
+function getKorDow(d) {
+  return d ? DOW_KO[d.getDay()] + '요일' : ''
+}
+
 function getDayDate(day) {
   if (day.date) return new Date(day.date)
   if (tripData.start_date) {
