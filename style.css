@@ -257,6 +257,7 @@ a { color: inherit; text-decoration: none; }
 .type-hotel     { background: #eeedfe; }
 .type-activity  { background: #eaf3de; }
 .type-free      { background: #f1efe8; }
+.type-etc       { background: #f1efe8; }
 
 /* ── 로딩 ── */
 .loading {

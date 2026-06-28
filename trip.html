@@ -90,6 +90,7 @@
             <option value="transport">✈️ 이동</option>
             <option value="hotel">🏨 숙박</option>
             <option value="free">🌙 자유</option>
+            <option value="etc">📌 기타</option>
           </select>
       </div>
       <div>
@@ -144,8 +145,8 @@
 <script>
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-const TYPE_ICONS = { transport:'✈️', meal:'🍽️', sight:'🏛️', shopping:'🛍️', hotel:'🏨', activity:'🎯', free:'🌙' }
-const TYPE_LABELS = { transport:'이동', meal:'식사', sight:'관광', shopping:'쇼핑', hotel:'숙박', activity:'액티비티', free:'자유' }
+const TYPE_ICONS = { transport:'✈️', meal:'🍽️', sight:'🏛️', shopping:'🛍️', hotel:'🏨', activity:'🎯', free:'🌙', etc:'📌' }
+const TYPE_LABELS = { transport:'이동', meal:'식사', sight:'관광', shopping:'쇼핑', hotel:'숙박', activity:'액티비티', free:'자유', etc:'기타' }
 
 let tripData = null
 let daysData = []
