@@ -69,12 +69,17 @@
     <input type="hidden" id="act-id">
     <input type="hidden" id="act-day-id">
     <div style="display:flex;flex-direction:column;gap:10px">
-      <div>
-        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">시간</label>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="act-time" placeholder="09:00 또는 09:00~11:00" style="flex:1;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none">
-          <select id="act-time-pick" onchange="applyTimePick()" style="width:110px;padding:7px 6px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:12px;outline:none;background:#fff;color:#888">
-            <option value="">빠른선택</option>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">시작시간</label>
+          <select id="act-time-start" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
+            <option value="">선택</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">종료시간 <span style="color:#ccc">(선택)</span></label>
+          <select id="act-time-end" style="width:100%;padding:7px 9px;border:1.5px solid #e0e0e0;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff">
+            <option value="">없음</option>
           </select>
         </div>
       </div>
@@ -597,7 +602,9 @@ function openActModal(actId, dayId) {
     const act = acts.find(a => a.id === actId)
     if (act) {
       document.getElementById('act-id').value = act.id
-      document.getElementById('act-time').value = act.time || ''
+      const tp = (act.time || '').split('~')
+      document.getElementById('act-time-start').value = tp[0]?.trim() || ''
+      document.getElementById('act-time-end').value = tp[1]?.trim() || ''
       document.getElementById('act-type').value = act.type || 'sight'
       document.getElementById('act-name').value = act.name || ''
       document.getElementById('act-desc').value = act.description || ''
@@ -610,7 +617,8 @@ function openActModal(actId, dayId) {
     }
   } else {
     document.getElementById('act-id').value = ''
-    document.getElementById('act-time').value = ''
+    document.getElementById('act-time-start').value = ''
+    document.getElementById('act-time-end').value = ''
     document.getElementById('act-type').value = 'sight'
     document.getElementById('act-name').value = ''
     document.getElementById('act-desc').value = ''
@@ -630,7 +638,11 @@ async function saveActivity() {
   const actId = document.getElementById('act-id').value
   const payload = {
     day_id: dayId,
-    time: document.getElementById('act-time').value,
+    time: (() => {
+      const s = document.getElementById('act-time-start').value
+      const e = document.getElementById('act-time-end').value
+      return s && e ? `${s}~${e}` : s || ''
+    })(),
     type: document.getElementById('act-type').value,
     name: document.getElementById('act-name').value,
     description: document.getElementById('act-desc').value,
@@ -846,33 +858,21 @@ function showToast(msg) {
 window.addEventListener('online', updateStatusBar)
 window.addEventListener('offline', updateStatusBar)
 
-// ── 빠른 시간 선택 드롭다운 옵션 생성 ──
-function buildTimePicker() {
-  const sel = document.getElementById('act-time-pick')
+// ── 시간 드롭다운 옵션 생성 ──
+function buildTimePickers() {
+  const times = []
   for (let h = 5; h <= 23; h++) {
-    ['00', '30'].forEach(m => {
-      const t = `${String(h).padStart(2,'0')}:${m}`
+    ['00', '30'].forEach(m => times.push(`${String(h).padStart(2,'0')}:${m}`))
+  }
+  ;['act-time-start', 'act-time-end'].forEach(id => {
+    const sel = document.getElementById(id)
+    if (!sel) return
+    times.forEach(t => {
       const opt = document.createElement('option')
-      opt.value = t
-      opt.textContent = t
+      opt.value = t; opt.textContent = t
       sel.appendChild(opt)
     })
-  }
-}
-
-function applyTimePick() {
-  const sel = document.getElementById('act-time-pick')
-  const val = sel.value
-  if (!val) return
-  const input = document.getElementById('act-time')
-  const cur = input.value.trim()
-  if (cur && !cur.includes('~')) {
-    input.value = cur + '~' + val
-  } else {
-    input.value = val
-  }
-  sel.value = ''
-  input.focus()
+  })
 }
 
 // 서비스 워커 등록
@@ -880,7 +880,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/travel-planner/sw.js')
 }
 
-buildTimePicker()
+buildTimePickers()
 init()
 </script>
 </body>
