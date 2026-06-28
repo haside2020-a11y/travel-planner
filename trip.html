@@ -257,6 +257,29 @@ function mkTab(id, label, sub) {
   btn.innerHTML = `<span class="dn">${label}</span><span class="dd">${sub}</span>`
   btn.onclick = () => switchTab(id)
   btn.dataset.tab = id
+
+  btn.addEventListener('dragover', e => {
+    if (!btn.classList.contains('drop-zone')) return
+    e.preventDefault()
+    btn.classList.add('drag-over')
+  })
+  btn.addEventListener('dragleave', () => btn.classList.remove('drag-over'))
+  btn.addEventListener('drop', async e => {
+    e.preventDefault()
+    btn.classList.remove('drag-over')
+    const actId = e.dataTransfer.getData('actId')
+    const fromDayId = e.dataTransfer.getData('fromDayId')
+    const toDayId = id
+    if (!actId || toDayId === 'all' || toDayId === fromDayId) return
+    await sb.from('activities').update({ day_id: toDayId }).eq('id', actId)
+    await reloadActivities(fromDayId)
+    await reloadActivities(toDayId)
+    activeTab = toDayId
+    renderTabs()
+    renderAll()
+    showToast('✅ 이동 완료!')
+  })
+
   return btn
 }
 
@@ -537,7 +560,7 @@ function renderActivity(act, dayId) {
     <div class="tl-icon-col">
       <div class="tl-icon type-${act.type}">${icon}</div>
     </div>
-    <div class="tl-card">
+    <div class="tl-card" ${editMode ? 'draggable="true"' : ''}>
       <div class="tl-row1">
         <span class="tl-type-badge">${typeLabel}</span>
         ${costStr}
@@ -552,6 +575,25 @@ function renderActivity(act, dayId) {
       ${act.memo ? `<div class="tl-memo">💡 ${act.memo}</div>` : ''}
     </div>
   `
+
+  if (editMode) {
+    const card = el.querySelector('.tl-card')
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('actId', act.id)
+      e.dataTransfer.setData('fromDayId', dayId)
+      el.classList.add('dragging')
+      document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+        if (btn.dataset.tab !== 'all' && btn.dataset.tab !== dayId)
+          btn.classList.add('drop-zone')
+      })
+    })
+    card.addEventListener('dragend', () => {
+      el.classList.remove('dragging')
+      document.querySelectorAll('.tab-btn').forEach(b =>
+        b.classList.remove('drop-zone', 'drag-over'))
+    })
+  }
+
   return el
 }
 
